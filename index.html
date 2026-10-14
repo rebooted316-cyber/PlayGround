@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Polar Clock — Tides of Ocean & Currency</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header>
+  <div class="title">
+    <h1>◉ POLAR CLOCK</h1>
+    <p>North-Pole center · Polaris above · Antarctica seconds border · Sun = hour hand · Moon = currency tide</p>
+  </div>
+  <div class="clock-readout">
+    <div id="bigTime">--:--:--</div>
+    <div id="bigDate">—</div>
+    <div id="altTime">17h day: — · Julian: —</div>
+  </div>
+</header>
+
+<nav id="toolbar">
+  <div class="group">
+    <label>Face</label>
+    <button id="modeClock" class="on">Clock (Earth)</button>
+    <button id="modeSky">Planetarium (13-month Zodiac)</button>
+  </div>
+  <div class="group">
+    <label>Day</label>
+    <button id="day24" class="on">24h</button>
+    <button id="day17">17h</button>
+  </div>
+  <div class="group">
+    <label>Calendar</label>
+    <select id="calSel">
+      <option value="gregory">Gregorian</option>
+      <option value="julian-cal">Julian (calendar era)</option>
+      <option value="islamic">Islamic</option>
+      <option value="hebrew">Hebrew</option>
+      <option value="chinese">Chinese</option>
+      <option value="persian">Persian</option>
+      <option value="indian">Indian</option>
+      <option value="ethiopic">Ethiopic</option>
+      <option value="coptic">Coptic</option>
+    </select>
+  </div>
+  <div class="group">
+    <label>Layers</label>
+    <button id="tNight" class="on">Day/Night</button>
+    <button id="tMyth" class="on">Mythic lands</button>
+    <button id="tMarkets" class="on">Markets</button>
+    <button id="tLat33" class="on">Lat 33° home</button>
+  </div>
+</nav>
+
+<main>
+  <section id="stageWrap">
+    <canvas id="polar" width="900" height="900"></canvas>
+    <div id="hint">drag to rotate · wheel to zoom · click a market dot for hours</div>
+    <div id="legend">
+      <span>☀ Sun = hour hand (ocean tide follows sun+moon)</span>
+      <span>☾ Moon = currency tide hand</span>
+      <span>◎ center = North Pole / Polaris ⏄</span>
+      <span>▭ outer ice = Antarctica · 60 sec / 12 min ticks</span>
+    </div>
+  </section>
+
+  <aside id="panels">
+    <div class="card">
+      <h2>Ocean tide <small>sun + moon</small></h2>
+      <div id="tideNow">—</div>
+      <canvas id="tideChart" width="520" height="140"></canvas>
+      <p class="note">Model: semidiurnal M2 (moon) + S2 (sun) for lat 33°. Constant-ish, springs at new/full moon. Plug NOAA / Admiralty API for real station data.</p>
+    </div>
+
+    <div class="card">
+      <h2>Currency tide <small>liquidity around the world every 24h</small></h2>
+      <div id="liqNow">—</div>
+      <canvas id="liqChart" width="520" height="140"></canvas>
+      <div id="sessions"></div>
+      <div id="watch"></div>
+      <p class="note">Sessions in UTC: Sydney 21–06 · Tokyo 00–09 · London 07–16 · New York 12–21. Liquidity poured Mon, bailed Fri. Symbols: SPY NASDAQ S&amp;P500 BTC XRP SONY MSFT GOOG + SpaceX (private). Live prices need a forex/crypto feed (e.g. Frankfurter / CoinGecko / broker API) — sparklines below are simulated tide, not quotes.</p>
+    </div>
+
+    <div class="card">
+      <h2>Calendars & holidays <small>all faiths, same timeline</small></h2>
+      <div id="calOut">—</div>
+      <div id="holidays"></div>
+      <p class="note">Sample inclusive set: Christianity · Judaism · Islam · Hinduism · Buddhism · Sikhism · Shinto · Baháʼí · Jain · Zoroastrian · Pagan/Wicca · Secular/bank. Lunisolar dates drift — full version should pull Hebcal / Aladhan / HK observatory feeds.</p>
+    </div>
+
+    <div class="card">
+      <h2>Story time <small>mythic + historic + pop</small></h2>
+      <div id="storyOut"></div>
+    </div>
+
+    <div class="card">
+      <h2>Daily utility <small>quote · word · knot</small></h2>
+      <div id="dailyOut"></div>
+    </div>
+
+    <div class="card">
+      <h2>Curiosities & data sources</h2>
+      <p class="note">Mythic overlay: Atlantis · Hyperborea · Mt Meru / Zion / Magic Mountain + four rivers · hidden polar lands (as legend, clearly labeled). Sky/street dream: free tiles exist (NASA Blue Marble, EOxServer, OpenStreetMap, webcams) — this prototype draws its own Earth so it works offline; wire XYZ tiles + camera embeds next.</p>
+    </div>
+  </aside>
+</main>
+
+<footer>
+  <span>Azimuthal-equidistant UN-style projection · center 90°N · edge 90°S · lat-33 circumnavigation line highlighted · </span>
+  <span id="footDate"></span>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
