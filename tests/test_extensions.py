@@ -300,7 +300,7 @@ def test_extension_routes(tmp_path):
     try:
         assert _call(base, "POST", "/skills", {"markdown": SKILL_MD})[0] == 201
         assert _call(base, "POST", "/skills", {"name": "tone", "description": "Polite tone", "instructions": "Be polite.", "tools": "calculator"})[1]["tools"] == ["calculator"]
-        assert {s["name"] for s in _call(base, "GET", "/skills")[1]["skills"]} == {"invoice-checker", "tone"}
+        assert {s["name"] for s in _call(base, "GET", "/skills")[1]["skills"]} >= {"invoice-checker", "tone"}
         assert _call(base, "POST", "/agents", {"name": "acct", "tools": [], "skills": ["tone"]})[1]["skills"] == ["tone"]
 
         status, mod = _call(base, "POST", "/mods", {"name": "ping", "description": "Ping", "url": "https://example.com/ping",

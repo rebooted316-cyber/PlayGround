@@ -252,6 +252,10 @@ class AgenticOS:
         self.providers = ProviderRegistry(self._path("providers.json"))
         self.skills = SkillRegistry(self._path("skills.json"))
         self.tools.register(self.skills.loader_tool())
+        try:
+            self.ensure_role_skills()
+        except Exception:  # noqa: BLE001, S110 - seeding built-in skills must never block startup
+            pass
         self.mods = ModRegistry(self._path("mods.json"))
         for mod in self.mods.all():
             if mod.enabled:
@@ -669,6 +673,56 @@ class AgenticOS:
         )
 
     # ------------------------------------------------------- skills & mods
+    def ensure_role_skills(self) -> list[str]:
+        """Seed the built-in role skills (quant-coding, quant-testing, ...) if missing."""
+        from agentic_os.roles import ROLE_SKILLS
+
+        added: list[str] = []
+        for name, spec in ROLE_SKILLS.items():
+            if self.skills.get(name) is None:
+                self.skills.add(Skill(name=name, description=spec["description"],
+                                      instructions=spec["instructions"],
+                                      tools=[t for t in spec.get("tools", "").split(",") if t.strip()] if isinstance(spec.get("tools"), str) else list(spec.get("tools") or [])))
+                added.append(name)
+        return added
+
+    def role_presets(self) -> list[dict[str, Any]]:
+        """Role presets with availability info for the current tool registry."""
+        from agentic_os.roles import public_presets
+
+        return public_presets(self.tools.names())
+
+    def spawn_role(self, name: str, preset: str, **overrides: Any) -> Agent:
+        """Spawn an agent from a role preset (``agentic_os/roles.py``).
+
+        ``overrides`` replace preset fields (e.g. ``instructions=...``).
+        Missing role skills are seeded automatically; unknown preset ids
+        raise ``KeyError``.
+        """
+        from agentic_os.roles import get_preset
+
+        spec = get_preset(preset)
+        self.ensure_role_skills()
+        params: dict[str, Any] = {
+            "instructions": spec["instructions"],
+            "tools": list(spec.get("tools") or []),
+            "tool_tags": list(spec.get("tool_tags") or []),
+            "skills": list(spec.get("skills") or []),
+            "mode": spec.get("mode", "standard"),
+            "permission": spec.get("permission", "auto"),
+            "conversational": bool(spec.get("conversational", False)),
+        }
+        if "use_knowledge" in spec:
+            params["use_knowledge"] = bool(spec["use_knowledge"])
+        # An empty tools+tags preset means "all tools" in spawn(); roles mean a fixed subset.
+        if not params["tools"] and not params["tool_tags"]:
+            params["tools"] = []
+        params.update({k: v for k, v in overrides.items() if v is not None})
+        # spawn() treats tools=None as "all tools"; keep [] as "fixed subset".
+        if params.get("tools") is None:
+            params["tools"] = []
+        return self.spawn(name, **params)
+
     def add_skill(self, skill: Skill) -> Skill:
         return self.skills.add(skill)
 

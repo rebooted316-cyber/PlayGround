@@ -8,7 +8,7 @@ const store = {
   del(k) { try { localStorage.removeItem(k); } catch { /* storage unavailable */ } },
 };
 let token = store.get("aos_token", "");
-const state = { agents: [], tools: [], providers: [], presets: [], extPresets: [], tab: "chat", timers: {} };
+const state = { agents: [], tools: [], providers: [], presets: [], extPresets: [], roles: [], tab: "chat", timers: {} };
 
 /* ---------------------------------------------------------------- helpers */
 function el(tag, attrs = {}, ...children) {
@@ -132,6 +132,8 @@ document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () 
 async function refreshAgents() {
   const data = await api("/agents");
   state.agents = data.agents; state.tools = data.tools; state.extPresets = data.external_presets;
+  state.roles = data.roles || [];
+  try { const r = await api("/roles"); if (r.roles && r.roles.length) state.roles = r.roles; } catch { /* /roles optional */ }
   const sel = $("#chat-agent"); const current = sel.value || store.get("aos_chat_agent", "assistant");
   sel.replaceChildren(...state.agents.map((a) => el("option", { value: a.name, text: `${a.name}${a.kind === "external" ? " (zewn.)" : ""}` })));
   sel.value = state.agents.some((a) => a.name === current) ? current : "assistant";
@@ -229,6 +231,12 @@ async function loadAgents() {
       } }) : null))));
   const provSel = $("#agent-provider");
   provSel.replaceChildren(el("option", { value: "default", text: "Domyślny systemu" }), ...state.providers.map((p) => el("option", { value: p.id, text: p.label || p.id })));
+  const presetSel = $("#agent-preset");
+  if (presetSel) {
+    presetSel.replaceChildren(el("option", { value: "", text: "— własna konfiguracja —" }),
+      ...(state.roles || []).map((r) => el("option", { value: r.id, text: `${r.label} — ${r.description}` })));
+    $("#preset-note").textContent = "";
+  }
   $("#agent-tools").replaceChildren(...state.tools.map((t) => el("label", { class: "chip" }, el("input", { type: "checkbox", name: "tools", value: t, checked: true }), t)));
   $("#agent-delegates").replaceChildren(...state.agents.map((a) => el("label", { class: "chip" }, el("input", { type: "checkbox", name: "delegates", value: a.name }), a.name)));
   $("#crew-agents").replaceChildren(...state.agents.map((a) => el("label", { class: "chip" }, el("input", { type: "checkbox", name: "agents", value: a.name }), a.name)));
@@ -256,10 +264,32 @@ $("#ext-preset").addEventListener("change", (e) => {
   if (!p) { $("#ext-note").textContent = ""; return; }
   f.elements.name.value = p.name; f.elements.protocol.value = p.protocol; f.elements.url.value = p.url; $("#ext-note").textContent = p.note;
 });
+$("#agent-preset")?.addEventListener("change", (e) => {
+  const r = (state.roles || []).find((x) => x.id === e.target.value);
+  const form = $("#agent-form");
+  if (!r) { $("#preset-note").textContent = ""; return; }
+  $("#preset-note").textContent = `🛠 ${(r.tools || []).join(", ") || (r.tool_tags || []).join(", ") || "brak"} · 🎓 ${(r.skills || []).join(", ") || "brak"}`;
+  if (!form.elements.instructions.value) form.elements.instructions.value = r.instructions || "";
+  const wantTools = new Set(r.tools || []);
+  // check explicit tools; tags are applied server-side when preset is sent
+  form.querySelectorAll("#agent-tools input").forEach((c) => { c.checked = wantTools.size ? wantTools.has(c.value) : c.checked; });
+  form.elements.mode.value = r.mode || "standard";
+  const perm = form.querySelector(`input[name=permission][value=${r.permission || "auto"}]`);
+  if (perm) perm.checked = true;
+  if (r.conversational) form.elements.conversational.checked = true;
+});
 $("#agent-form").addEventListener("submit", withBusy($("#agent-form"), async (fd) => {
+  const preset = fd.get("preset") || undefined;
   const body = { name: fd.get("name"), instructions: fd.get("instructions") || undefined, provider: fd.get("provider"),
-    model: fd.get("model") || undefined, tools: fd.getAll("tools"), skills: fd.getAll("skills"), conversational: fd.get("conversational") === "on",
+    model: fd.get("model") || undefined, skills: fd.getAll("skills"), conversational: fd.get("conversational") === "on",
     mode: fd.get("mode"), permission: fd.get("permission") || "auto", delegates: fd.getAll("delegates") };
+  if (preset) {
+    body.preset = preset;
+    // send explicit tool selection only when user changed it; otherwise let the preset decide
+    body.tools = fd.getAll("tools");
+  } else {
+    body.tools = fd.getAll("tools");
+  }
   if (body.permission === "full" && !confirm("Pełny dostęp: agent użyje każdego narzędzia, serwera MCP, moda i agenta bez pytania. Kontynuować?")) return;
   await api("/agents", { method: "POST", body }); toast("Agent utworzony ✅"); $("#agent-form").reset(); loadAgents();
 }));

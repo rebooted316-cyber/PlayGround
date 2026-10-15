@@ -11,7 +11,8 @@ GET      /status                           OS summary
 GET      /metrics                          counters and latency percentiles
 GET      /agents                           registered agents
 POST     /agents                           spawn ``{name, instructions?, tools?, tool_tags?, conversational?,
-                                           mode?, permission?, delegates?}``
+                                           mode?, permission?, delegates?, preset?}``
+GET      /roles                            role presets (id, tools, skills, descriptions)
 POST     /run                              ``{task, agent?, context?, async?}`` -> process
 GET      /processes                        process table
 GET      /processes/{pid}                  one process, with its result
@@ -191,7 +192,11 @@ def make_handler(system: AgenticOS) -> type[BaseHTTPRequestHandler]:
                     return 200, system.metrics.snapshot()
                 if path == "/agents":
                     return 200, {"agents": [system.describe(n) for n in system.agents],
-                                 "external_presets": AGENT_PRESETS, "tools": system.tools.names()}
+                                 "external_presets": AGENT_PRESETS, "tools": system.tools.names(),
+                                 "roles": system.role_presets()}
+                if path == "/roles":
+                    return 200, {"roles": system.role_presets(),
+                                 "skills": system.skills.public(), "tools": system.tools.names()}
                 if path == "/providers":
                     return 200, {"providers": system.providers.public(), "presets": PRESETS,
                                  "default": {"provider": system.prefs.get("default_provider") or "env",
@@ -340,6 +345,30 @@ def make_handler(system: AgenticOS) -> type[BaseHTTPRequestHandler]:
                 name = _require(body, "name")
                 if not re.fullmatch(r"[a-zA-Z0-9_-]{1,40}", name):
                     raise HTTPError(400, "Agent name must match [a-zA-Z0-9_-]{1,40}")
+                if body.get("preset"):
+                    preset = str(body["preset"])
+                    overrides: dict[str, Any] = {}
+                    if body.get("instructions"):
+                        overrides["instructions"] = str(body["instructions"])
+                    if isinstance(body.get("tools"), list) and body["tools"]:
+                        overrides["tools"] = [str(t) for t in body["tools"]]
+                    if isinstance(body.get("tool_tags"), list) and body["tool_tags"]:
+                        overrides["tool_tags"] = [str(t) for t in body["tool_tags"]]
+                    if isinstance(body.get("skills"), list) and body["skills"]:
+                        overrides["skills"] = [str(s) for s in body["skills"]]
+                    if body.get("provider") and body["provider"] != "default":
+                        overrides["provider"] = str(body["provider"])
+                        overrides["model"] = str(body.get("model") or "") or None
+                    for key in ("mode", "permission", "conversational", "use_knowledge"):
+                        if body.get(key) not in (None, ""):
+                            overrides[key] = body[key]
+                    if isinstance(body.get("delegates"), list):
+                        overrides["delegates"] = [str(d) for d in body["delegates"]]
+                    try:
+                        agent = system.spawn_role(name, preset, **overrides)
+                    except KeyError as exc:
+                        raise HTTPError(400, str(exc)) from exc
+                    return 201, system.describe(agent.name)
                 kwargs: dict[str, Any] = {
                     "tools": body.get("tools"),
                     "tool_tags": body.get("tool_tags"),

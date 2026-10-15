@@ -68,6 +68,8 @@
         <details class="card form-card">
           <summary>➕ Nowy agent</summary>
           <form id="agent-form" class="stack">
+            <label class="field"><span>Rola (gotowy zestaw narzędzi + skilli)</span><select name="preset" id="agent-preset"></select></label>
+            <p id="preset-note" class="muted small"></p>
             <label class="field"><span>Nazwa (litery, cyfry, _ -)</span><input name="name" pattern="[a-zA-Z0-9_\-]{1,40}" required></label>
             <label class="field"><span>Instrukcje (kim jest i co robi)</span><textarea name="instructions" rows="3" placeholder="Np. Jesteś analitykiem danych. Zawsze licz kalkulatorem."></textarea></label>
             <div class="row">
