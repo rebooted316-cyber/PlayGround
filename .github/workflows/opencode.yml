@@ -25,9 +25,9 @@ jobs:
       id-token: write
       issues: write
       actions: write
-    uses: AgentsLoop/OhMyGithub/.github/workflows/opencode-prepare.yml@067b3ebab8c298d78ef082786dec925c9877bc44
+    uses: AgentsLoop/OhMyGithub/.github/workflows/opencode-prepare.yml@1ed0818c6f6bde3293b127c17668fcad4b02c347
     with:
-      runtime_ref: 067b3ebab8c298d78ef082786dec925c9877bc44
+      runtime_ref: 1ed0818c6f6bde3293b127c17668fcad4b02c347
 
   opencode:
     needs: prepare
@@ -38,9 +38,9 @@ jobs:
       issues: write
       actions: read
       pull-requests: write
-    uses: AgentsLoop/OhMyGithub/.github/workflows/opencode-reusable.yml@067b3ebab8c298d78ef082786dec925c9877bc44
+    uses: AgentsLoop/OhMyGithub/.github/workflows/opencode-reusable.yml@1ed0818c6f6bde3293b127c17668fcad4b02c347
     with:
-      runtime_ref: 067b3ebab8c298d78ef082786dec925c9877bc44
+      runtime_ref: 1ed0818c6f6bde3293b127c17668fcad4b02c347
       issue_number: ${{ needs.prepare.outputs.issue_number }}
       request: ${{ needs.prepare.outputs.request }}
       issue_title: ${{ needs.prepare.outputs.issue_title }}
