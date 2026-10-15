@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentic-os"
+version = "0.1.0"
+description = "An operating system for AI agents, built stage by stage from the Roadmap to Learn Agentic AI."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = []
+
+[project.optional-dependencies]
+anthropic = ["anthropic>=1.0"]
+gemini = ["google-genai>=2.0"]
+dev = ["pytest>=8", "ruff>=0.5"]
+
+[project.scripts]
+agentic-os = "agentic_os.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["agentic_os*"]
+
+[tool.setuptools.package-data]
+"agentic_os.server" = ["static/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"

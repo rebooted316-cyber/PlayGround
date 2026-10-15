@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Agentic OS</title>
+  <meta name="description" content="Agentic OS War Room: Twoi agenci AI w jednym miejscu.">
+  <meta name="theme-color" content="#0b1020">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <div id="login" class="login hidden" role="dialog" aria-labelledby="login-title">
+    <form id="login-form" class="card login-card">
+      <img src="/icon.svg" alt="" width="56" height="56">
+      <h1 id="login-title">Agentic OS</h1>
+      <p class="muted">Podaj hasło do swojego War Roomu.</p>
+      <label class="field"><span>Hasło</span>
+        <input id="login-token" type="password" autocomplete="current-password" required>
+      </label>
+      <p id="login-error" class="error" role="alert"></p>
+      <button class="btn primary" type="submit">Wejdź</button>
+    </form>
+  </div>
+
+  <div id="app" class="app hidden">
+    <header class="topbar">
+      <div class="brand"><img src="/icon.svg" alt="" width="28" height="28"><span>Agentic OS</span></div>
+      <div id="model-badge" class="badge" title="Domyślny model"></div>
+      <button id="install-btn" class="btn small hidden" type="button">Zainstaluj</button>
+    </header>
+
+    <nav class="tabs" aria-label="Sekcje">
+      <button data-tab="chat" class="tab active">💬<span>Czat</span></button>
+      <button data-tab="agents" class="tab">🤖<span>Agenci</span></button>
+      <button data-tab="tasks" class="tab">📋<span>Zadania</span></button>
+      <button data-tab="brain" class="tab">🧠<span>Mózg</span></button>
+      <button data-tab="knowledge" class="tab">📚<span>Wiedza</span></button>
+      <button data-tab="ext" class="tab">🧩<span>Rozszerz.</span></button>
+      <button data-tab="models" class="tab">🔑<span>Modele</span></button>
+      <button data-tab="monitor" class="tab">📊<span>Monitoring</span></button>
+    </nav>
+
+    <div id="approvals" class="approvals hidden" aria-live="assertive"></div>
+
+    <main>
+      <!-- CZAT -->
+      <section id="tab-chat" class="panel active chat-panel">
+        <div class="chat-head">
+          <label class="field inline"><span>Agent</span><select id="chat-agent"></select></label>
+          <label class="field inline"><span class="sr-only">Uprawnienia agenta</span><select id="chat-permission" title="Uprawnienia agenta: możesz je zmienić w każdej chwili"></select></label>
+          <button id="chat-reset" class="btn small ghost" type="button">Nowa rozmowa</button>
+        </div>
+        <div id="chat-log" class="chat-log" aria-live="polite"></div>
+        <form id="chat-form" class="chat-input">
+          <textarea id="chat-text" rows="1" placeholder="Napisz do agenta…" required></textarea>
+          <button class="btn primary" type="submit" aria-label="Wyślij">➤</button>
+        </form>
+      </section>
+
+      <!-- AGENCI -->
+      <section id="tab-agents" class="panel">
+        <h2>Twoi agenci</h2>
+        <div id="agent-list" class="grid"></div>
+
+        <details class="card form-card">
+          <summary>➕ Nowy agent</summary>
+          <form id="agent-form" class="stack">
+            <label class="field"><span>Nazwa (litery, cyfry, _ -)</span><input name="name" pattern="[a-zA-Z0-9_\-]{1,40}" required></label>
+            <label class="field"><span>Instrukcje (kim jest i co robi)</span><textarea name="instructions" rows="3" placeholder="Np. Jesteś analitykiem danych. Zawsze licz kalkulatorem."></textarea></label>
+            <div class="row">
+              <label class="field"><span>Dostawca modelu</span><select name="provider" id="agent-provider"></select></label>
+              <label class="field"><span>Model (opcjonalnie)</span><input name="model" placeholder="domyślny dostawcy"></label>
+            </div>
+            <fieldset class="field"><legend>Narzędzia</legend><div id="agent-tools" class="chips"></div></fieldset>
+            <fieldset class="field"><legend>Skille (umiejętności)</legend><div id="agent-skills" class="chips"></div></fieldset>
+            <label class="field"><span>Tryb myślenia</span>
+              <select name="mode">
+                <option value="standard">Standardowy</option>
+                <option value="reflective">🔁 Refleksyjny: sam ocenia odpowiedź, krytykuje i poprawia</option>
+                <option value="adaptive">🎯 Adaptacyjny: uczy się z 👍/👎, który styl działa najlepiej</option>
+              </select>
+            </label>
+            <fieldset class="field"><legend>Może zlecać zadania agentom</legend><div id="agent-delegates" class="chips"></div></fieldset>
+            <label class="check"><input type="checkbox" name="conversational"> Pamięta rozmowę (czat)</label>
+            <fieldset class="field"><legend>Uprawnienia (ile agent może zrobić bez Ciebie)</legend>
+              <div class="choices">
+                <label class="choice"><input type="radio" name="permission" value="ask"><span><b>✋ Zawsze pytaj</b><small>Każde użycie narzędzia czeka na Twoją zgodę.</small></span></label>
+                <label class="choice"><input type="radio" name="permission" value="smart"><span><b>🧠 Agent decyduje, kiedy zapytać</b><small>Bezpieczne rzeczy (czytanie, liczenie, szukanie) robi sam. O zmiany prosi o zgodę i może zadać Ci pytanie.</small></span></label>
+                <label class="choice"><input type="radio" name="permission" value="auto" checked><span><b>🚀 Autonomiczny</b><small>Sam podejmuje decyzje w ramach wybranych narzędzi, nie czeka na Ciebie.</small></span></label>
+                <label class="choice danger"><input type="radio" name="permission" value="full"><span><b>🔓 Pełny dostęp</b><small>Wszystkie narzędzia, MCP, mody i agenci w systemie, bez pytania. Tylko dla zaufanych zadań.</small></span></label>
+              </div>
+            </fieldset>
+            <button class="btn primary" type="submit">Utwórz agenta</button>
+          </form>
+        </details>
+
+        <details class="card form-card">
+          <summary>🔌 Podłącz zewnętrznego agenta</summary>
+          <form id="ext-form" class="stack">
+            <label class="field"><span>Gotowy szablon</span><select id="ext-preset"></select></label>
+            <p id="ext-note" class="muted small"></p>
+            <div class="row">
+              <label class="field"><span>Nazwa</span><input name="name" pattern="[a-zA-Z0-9_\-]{1,40}" required></label>
+              <label class="field"><span>Protokół</span>
+                <select name="protocol"><option value="openai">Zgodny z OpenAI</option><option value="a2a">A2A</option><option value="webhook">Webhook</option></select>
+              </label>
+            </div>
+            <label class="field"><span>Adres (URL)</span><input name="url" type="url" required placeholder="https://…"></label>
+            <div class="row">
+              <label class="field"><span>Klucz API (jeśli wymagany)</span><input name="api_key" type="password" autocomplete="off"></label>
+              <label class="field"><span>Model (dla OpenAI)</span><input name="model"></label>
+            </div>
+            <label class="field"><span>Opis (co potrafi)</span><input name="description"></label>
+            <button class="btn primary" type="submit">Podłącz</button>
+          </form>
+        </details>
+
+        <details class="card form-card">
+          <summary>👥 Uruchom zespół agentów</summary>
+          <form id="crew-form" class="stack">
+            <fieldset class="field"><legend>Członkowie zespołu</legend><div id="crew-agents" class="chips"></div></fieldset>
+            <label class="field"><span>Sposób współpracy</span>
+              <select name="process">
+                <option value="manager">Menedżer deleguje zadania</option>
+                <option value="sequential">Po kolei (każdy poprawia poprzednika)</option>
+                <option value="plan">Plan krok po kroku</option>
+                <option value="router">Wybór najlepszego agenta</option>
+              </select>
+            </label>
+            <label class="field"><span>Zadanie</span><textarea name="task" rows="3" required></textarea></label>
+            <button class="btn primary" type="submit">Start</button>
+          </form>
+        </details>
+      </section>
+
+      <!-- ZADANIA -->
+      <section id="tab-tasks" class="panel">
+        <div class="section-head"><h2>Zadania</h2><button id="tasks-refresh" class="btn small ghost" type="button">Odśwież</button></div>
+        <div id="task-list" class="list"></div>
+        <div id="task-detail" class="card hidden"></div>
+      </section>
+
+      <!-- MÓZG -->
+      <section id="tab-brain" class="panel">
+        <div class="section-head"><h2>Mózg agenta</h2><button id="brain-refresh" class="btn small ghost" type="button">Odśwież</button></div>
+        <p class="muted small">Dokumenty, fragmenty wiedzy i wspomnienia połączone podobieństwem znaczeń. Dotknij punktu, żeby zobaczyć treść.</p>
+        <div class="legend" id="brain-legend"></div>
+        <div class="brain-wrap"><canvas id="brain" aria-label="Graf wiedzy"></canvas></div>
+        <div id="brain-detail" class="card hidden"></div>
+
+        <details class="card form-card">
+          <summary>📥 Importuj pamięć z innego AI</summary>
+          <div class="stack">
+            <p class="muted small">Wgraj eksport danych z <b>ChatGPT</b> (Ustawienia → Kontrola danych → Eksportuj dane: plik .zip), <b>Claude</b> (Settings → Privacy → Export data), <b>Gemini</b> (Google Takeout → Gemini, format JSON), <b>Grok</b>, <b>DeepSeek</b> lub <b>Mistral</b> (plik .zip/.json). Albo skopiuj listę zapisanych wspomnień z ustawień dowolnego asystenta i wklej ją poniżej.</p>
+            <label class="btn ghost file-btn">📦 Wybierz plik eksportu (.zip / .json / .txt)<input id="mem-file" type="file" accept=".zip,.json,.txt,.md,application/zip,application/json,text/*" hidden></label>
+            <label class="field"><span>…albo wklej wspomnienia (jedno w linii)</span><textarea id="mem-text" rows="4" placeholder="- Mam na imię Daniel&#10;- Pracuję nad grą w Godocie&#10;- Wolę krótkie odpowiedzi"></textarea></label>
+            <label class="check"><input type="checkbox" id="mem-distill"> Niech model wyciągnie najważniejsze fakty z rozmów (zużywa tokeny)</label>
+            <button id="mem-import" class="btn primary" type="button">Importuj</button>
+            <div id="mem-result" class="muted small"></div>
+          </div>
+        </details>
+      </section>
+
+      <!-- WIEDZA -->
+      <section id="tab-knowledge" class="panel">
+        <h2>Baza wiedzy</h2>
+        <form id="kb-form" class="card stack">
+          <label class="field"><span>Tytuł</span><input name="source" placeholder="np. cennik.md"></label>
+          <label class="field"><span>Treść</span><textarea name="text" rows="5" required placeholder="Wklej tekst, z którego agenci mają korzystać…"></textarea></label>
+          <div class="row">
+            <label class="btn ghost file-btn">📄 Wczytaj plik .txt/.md<input id="kb-file" type="file" accept=".txt,.md,.csv,.json,text/*" hidden></label>
+            <button class="btn primary" type="submit">Dodaj do wiedzy</button>
+          </div>
+        </form>
+        <div id="kb-list" class="list"></div>
+      </section>
+
+      <!-- ROZSZERZENIA -->
+      <section id="tab-ext" class="panel">
+        <h2>Rozszerzenia</h2>
+
+        <h3>🎓 Skille (umiejętności)</h3>
+        <p class="muted small">Pakiety instrukcji, które przypinasz agentom. Agent wczytuje skill, gdy zadanie tego wymaga.</p>
+        <div id="skill-list" class="list"></div>
+        <details class="card form-card">
+          <summary>➕ Dodaj skill</summary>
+          <form id="skill-form" class="stack">
+            <label class="field"><span>Nazwa</span><input name="name" pattern="[a-zA-Z0-9_\-]{1,64}"></label>
+            <label class="field"><span>Opis (kiedy go użyć)</span><input name="description"></label>
+            <label class="field"><span>Instrukcje</span><textarea name="instructions" rows="5" placeholder="Krok po kroku, co agent ma robić…"></textarea></label>
+            <label class="field"><span>Narzędzia (po przecinku, opcjonalnie)</span><input name="tools" placeholder="calculator, csv_summary"></label>
+            <p class="muted small">Albo wklej cały plik <code>SKILL.md</code> (z nagłówkiem name/description):</p>
+            <label class="field"><span>SKILL.md</span><textarea name="markdown" rows="4" placeholder="---&#10;name: my-skill&#10;description: …&#10;---&#10;Instrukcje…"></textarea></label>
+            <button class="btn primary" type="submit">Zapisz skill</button>
+          </form>
+        </details>
+
+        <h3>🛠 Mody (własne narzędzia)</h3>
+        <p class="muted small">Zamień dowolne API w narzędzie agenta, bez programowania.</p>
+        <div id="mod-list" class="list"></div>
+        <details class="card form-card">
+          <summary>➕ Dodaj mod</summary>
+          <form id="mod-form" class="stack">
+            <div class="row">
+              <label class="field"><span>Nazwa</span><input name="name" required pattern="[a-zA-Z0-9_\-]{1,48}"></label>
+              <label class="field"><span>Metoda</span><select name="method"><option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option></select></label>
+            </div>
+            <label class="field"><span>Co robi (opis dla agenta)</span><input name="description" required placeholder="Sprawdza pogodę dla miasta"></label>
+            <label class="field"><span>Adres URL (możesz użyć {parametr})</span><input name="url" type="url" required placeholder="https://api.example.com/weather?city={city}"></label>
+            <label class="field"><span>Parametry (jeden w linii: nazwa:typ:opis)</span><textarea name="params" rows="3" placeholder="city:string:Nazwa miasta"></textarea></label>
+            <div class="row">
+              <label class="field"><span>Nagłówek (np. Authorization)</span><input name="header_name" placeholder="Authorization"></label>
+              <label class="field"><span>Wartość nagłówka</span><input name="header_value" type="password" autocomplete="off" placeholder="Bearer …"></label>
+            </div>
+            <button class="btn primary" type="submit">Zapisz mod</button>
+          </form>
+        </details>
+
+        <h3>🔗 Serwery MCP</h3>
+        <p class="muted small">Podłącz dowolny serwer MCP: jego narzędzia od razu dostają agenci.</p>
+        <div id="mcp-list" class="list"></div>
+        <details class="card form-card">
+          <summary>➕ Podłącz serwer MCP</summary>
+          <form id="mcp-form" class="stack">
+            <div class="row">
+              <label class="field"><span>Nazwa</span><input name="name" required pattern="[a-zA-Z0-9_\-]{1,32}"></label>
+              <label class="field"><span>Połączenie</span><select name="transport"><option value="http">Zdalny (URL)</option><option value="stdio">Lokalny (polecenie)</option></select></label>
+            </div>
+            <label class="field"><span>Adres URL serwera (dla zdalnego)</span><input name="url" type="url" placeholder="https://…/mcp"></label>
+            <label class="field"><span>Token (jeśli wymagany)</span><input name="token" type="password" autocomplete="off"></label>
+            <label class="field"><span>Polecenie (dla lokalnego)</span><input name="command" placeholder="npx -y @modelcontextprotocol/server-everything"></label>
+            <button class="btn primary" type="submit">Połącz</button>
+          </form>
+        </details>
+      </section>
+
+      <!-- MODELE -->
+      <section id="tab-models" class="panel">
+        <h2>Modele i klucze API</h2>
+        <p class="muted small">Klucze są zapisywane tylko na serwerze i nigdy nie wracają do przeglądarki w całości.</p>
+        <div id="default-model" class="card"></div>
+        <div id="provider-list" class="list"></div>
+        <details class="card form-card" open>
+          <summary>➕ Dodaj dostawcę / klucz</summary>
+          <form id="provider-form" class="stack">
+            <label class="field"><span>Dostawca</span><select id="provider-preset"></select></label>
+            <div class="row">
+              <label class="field"><span>Identyfikator</span><input name="id" pattern="[a-zA-Z0-9_\-]{1,40}" required></label>
+              <label class="field"><span>Rodzaj API</span>
+                <select name="kind"><option value="openai_compat">Zgodny z OpenAI</option><option value="anthropic">Anthropic</option><option value="gemini">Gemini</option></select>
+              </label>
+            </div>
+            <label class="field"><span>Adres API (base URL)</span><input name="base_url" placeholder="https://…/v1"></label>
+            <label class="field"><span>Klucz API</span><input name="api_key" type="password" autocomplete="off" placeholder="zostaw puste, żeby nie zmieniać"></label>
+            <label class="field"><span>Domyślny model</span><input name="default_model" placeholder="np. gemini-flash-latest"></label>
+            <label class="check"><input type="checkbox" name="make_default"> Ustaw jako domyślny model systemu</label>
+            <button class="btn primary" type="submit">Zapisz</button>
+          </form>
+        </details>
+      </section>
+
+      <!-- MONITORING -->
+      <section id="tab-monitor" class="panel">
+        <div class="section-head"><h2>Monitoring</h2><button id="monitor-refresh" class="btn small ghost" type="button">Odśwież</button></div>
+        <div id="monitor-stats" class="stats"></div>
+        <div id="monitor-timings" class="card"></div>
+      </section>
+    </main>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  </div>
+  <script src="/app.js"></script>
+</body>
+</html>
